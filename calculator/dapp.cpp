@@ -4,9 +4,126 @@
 #include "3rdparty/cpp-httplib/httplib.h"
 #include "3rdparty/picojson/picojson.h"
 
+std::string stringToHex(const std::string& input){
+    std::ostringstream hexStream;
+    hexStream << "0x";
+    for(unsigned char c : input){
+        hexStream << std::hex <<  std::setw(2) << std::setfill('0') << (int)c;
+    }
+    return hexStream.str();
+}
+
+std::string hexToString(const std::string& hexInput){
+    if(hexInput.substr(0, 2) != "0x"){
+        throw std::invalid_argument("Invalid hex input: Missing 0x prefix");
+    }
+    std::string result;
+    for(size_t i = 2; i < hexInput.size(); i += 2){
+        std::string byteString = hexInput.substr(i, 2);
+        char byte = static_cast<char>(std::stoul(byteString, nullptr, 16));
+        result.push_back(byte);
+    }
+    return result;
+}
+
+bool isOperator(char ch) {
+    return ch == '+' || ch == '-' || ch == '*' || ch == '/';
+}
+
+bool isValidExpression(const std::string& expression) {
+    if (expression.empty()) return false; // Empty string is invalid
+
+    bool lastWasOperator = true; // Ensure no leading operator
+    bool hasNumber = false;       // Track if we have at least one number
+
+    for (size_t i = 0; i < expression.size(); i++) {
+        char ch = expression[i];
+
+        if (std::isspace(ch)) continue; // Ignore spaces
+
+        if (std::isdigit(ch)) {
+            hasNumber = true;
+            lastWasOperator = false; // Reset flag since we saw a number
+        } else if (isOperator(ch)) {
+            if (lastWasOperator) return false; // Two operators in a row or leading operator
+            lastWasOperator = true;
+        } else {
+            return false; // Invalid character
+        }
+    }
+
+    return hasNumber && !lastWasOperator; // Must end with a number
+}
+
+int precedence(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    return 0;
+}
+
+int applyOperation(int a, int b, char op) {
+    switch (op) {
+        case '+': return a + b;
+        case '-': return a - b;
+        case '*': return a * b;
+        case '/': 
+            if (b == 0) throw std::runtime_error("Division by zero");
+            return a / b;
+        default: throw std::invalid_argument("Unsupported operator");
+    }
+}
+
+std::string evaluateExpression(const std::string& expression) {
+    if (!isValidExpression(expression)) {
+        return "Error: Invalid mathematical expression";
+    }
+
+    std::stack<int> values;
+    std::stack<char> ops;
+    std::istringstream tokens(expression);
+    
+    int num;
+    char ch;
+    
+    try {
+        while (tokens >> std::ws) { // Ignore whitespace
+            if (std::isdigit(tokens.peek())) {  
+                tokens >> num;
+                values.push(num);
+            } else { 
+                tokens >> ch;
+                while (!ops.empty() && precedence(ops.top()) >= precedence(ch)) {
+                    int b = values.top(); values.pop();
+                    int a = values.top(); values.pop();
+                    char op = ops.top(); ops.pop();
+                    values.push(applyOperation(a, b, op));
+                }
+                ops.push(ch);
+            }
+        }
+
+        while (!ops.empty()) {
+            int b = values.top(); values.pop();
+            int a = values.top(); values.pop();
+            char op = ops.top(); ops.pop();
+            values.push(applyOperation(a, b, op));
+        }
+
+        return std::to_string(values.top()); // Return result as a string
+    } catch (const std::exception& e) {
+        return std::string("Error: ") + e.what(); // Return error as a string
+    }
+}
+
 std::string handle_advance(httplib::Client &cli, picojson::value data)
 {
-    std::cout << "Received advance request data " << data << std::endl;
+    std::cout << "Data: " << data << std::endl;
+    std::cout << "Address: " << data.get("metadata").get("msg_sender").to_str() << std::endl;
+    std::cout << "Payload: " << data.get("payload").to_str() << std::endl;
+    std::string decodedPayload = hexToString(data.get("payload").to_str());
+    std::cout << "Decoded Payload: " << decodedPayload << std::endl;
+    std::cout << "Handle expression: " << evaluateExpression(decodedPayload) << std::endl;
+    
     return "accept";
 }
 
