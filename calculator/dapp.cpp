@@ -4,6 +4,20 @@
 #include "3rdparty/cpp-httplib/httplib.h"
 #include "3rdparty/picojson/picojson.h"
 
+void createReport(httplib::Client &cli, const std::string &payload) {
+    std::string report = std::string("{\"payload\":\"") + payload + std::string("\"}");
+    auto r = cli.Post("/report", report, "application/json");    
+    // Expect status 202
+    std::cout << "Received report status " << r.value().status << std::endl;
+}
+
+void createNotice(httplib::Client &cli, const std::string &payload) {
+    std::string notice = std::string("{\"payload\":\"") + payload + std::string("\"}");
+    auto r = cli.Post("/notice", notice, "application/json");    
+    // Expect status 201
+    std::cout << "Received notice status " << r.value().status << std::endl;
+}
+
 std::string stringToHex(const std::string& input){
     std::ostringstream hexStream;
     hexStream << "0x";
@@ -122,8 +136,9 @@ std::string handle_advance(httplib::Client &cli, picojson::value data)
     std::cout << "Payload: " << data.get("payload").to_str() << std::endl;
     std::string decodedPayload = hexToString(data.get("payload").to_str());
     std::cout << "Decoded Payload: " << decodedPayload << std::endl;
-    std::cout << "Handle expression: " << evaluateExpression(decodedPayload) << std::endl;
-    
+    std::string evaluatedExpression = evaluateExpression(decodedPayload);
+    std::cout << "Handle expression: " << evaluatedExpression << std::endl;
+    createNotice(cli, stringToHex(evaluatedExpression));
     return "accept";
 }
 
