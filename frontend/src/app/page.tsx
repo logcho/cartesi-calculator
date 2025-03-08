@@ -3,7 +3,11 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useWriteInputBoxAddInput } from "@/hooks/generated";
+import { stringToHex } from "viem";
+import { NOTICES_QUERY } from "@/hooks/gql";
+import { useQuery } from "@apollo/client";
 
 export default function Home() {
   const [calculation, setCalculation] = useState("0"); // Start with "0" as the initial value
@@ -30,6 +34,9 @@ export default function Home() {
     <div className="flex justify-center items-center min-h-screen bg-gray-800 p-4">
       {/* Stack  */}
       <div className="flex justify-center items-center flex-col bg-gray-900 rounded-lg shadow-lg p-4 w-full sm:w-96">
+        <div className="mb-6">
+          <ConnectButton/>
+        </div>
         <h1 className="font-light text-3xl text-white text-center mb-6">
           Calculator
         </h1>
