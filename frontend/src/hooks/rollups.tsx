@@ -124,7 +124,7 @@ export const useRollupsServer = (dapp: Address, input?: Hex) => {
     }
     
     return {
-        loading: writePending,
+        loading: writePending || queryLoading,
         success: writeSuccess,
         error: writeError,
         write,

@@ -3,47 +3,36 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Address, hexToString, stringToHex } from "viem";
 import { useRollupsServer } from "@/hooks/rollups";
+import exp from "constants";
 
 export default function Home() {
-  const [calculation, setCalculation] = useState("0"); // Start with "0" as the initial value
+  const [expression, setExpression] = useState("0"); // Start with "0" as the initial value
   const dappAddress: Address = "0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e"
-  // TODO useRollupsServer
-  const { loading, success, error, write, notices} = useRollupsServer(dappAddress, stringToHex(calculation));
+
+  const { loading, success, error, write, notices} = useRollupsServer(dappAddress, stringToHex(expression));
 
   const [ result ] = notices;
-  console.log(result);
 
-  // Use useEffect to handle setting calculation based on loading, error, and result
-  useEffect(() => {
-    if (loading) {
-      setCalculation("Loading...");
-    } else if (error) {
-      setCalculation("Error");
-    } else if (result) {
-      setCalculation(hexToString(result)); // Convert hex result to string
-    }
-  }, [loading, error, result]); // Depend on loading, error, and result
-
-  const handleClick = (value: string) => {
-    if (value === "=") {
-      try {
-        // Evaluate the expression
-        setCalculation("Loading...");
-        write && write();
-      } catch (error) {
-        setCalculation("Error");
-      }
-    } else if (value === "C") {
+  const handleExpression = (value: string) => {
+    if (value === "C") {
       // Clear the calculation
-      setCalculation("0");
+      setExpression("0");
     } else {
       // Append the value to the current calculation
-      setCalculation(prev => (prev === "0" ? value : prev + value));
+      setExpression(prev => (prev === "0" ? value : prev + value));
     }
   };
+
+  const handleCalculate = () =>{
+    write && write();
+  }
+
+  useEffect(() => {
+    if(result) setExpression(hexToString(result));
+  }, [result])
 
   return (
     // Safe View
@@ -59,30 +48,29 @@ export default function Home() {
         <div className="w-full bg-gray-700 rounded-md overflow-hidden">
           {/* Output  */}
           <div className="m-2 p-2 bg-gray-800 text-white rounded-md">
-            <h1 className="font-light text-4xl text-right">
-              {calculation}
-            </h1>
+              <h1 className="font-light text-4xl text-right">{expression}</h1>
           </div>
           {/* Keyboard  */}
           <div className="grid grid-cols-3 gap-4 mt-6">
             {/* Number buttons */}
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("1")}>1</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("2")}>2</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("3")}>3</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("4")}>4</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("5")}>5</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("6")}>6</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("7")}>7</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("8")}>8</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("9")}>9</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("0")}>0</Button>
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(num => (
+              <Button key={num} className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleExpression(num)}>
+                {num}
+              </Button>
+            ))}
             {/* Operator buttons */}
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("+")}>+</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("-")}>-</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("*")}>*</Button>
-            <Button className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleClick("/")}>/</Button>
-            <Button className="text-center py-4 text-2xl bg-green-600 text-white rounded-md hover:bg-green-500 col-span-2" onClick={() => handleClick("=")}>=</Button>
-            <Button className="text-center py-4 text-2xl bg-red-600 text-white rounded-md hover:bg-red-500" onClick={() => handleClick("C")}>C</Button> {/* Clear button */}
+            {["+", "-", "*", "/"].map(op => (
+              <Button key={op} className="text-center py-4 text-2xl bg-gray-600 text-white rounded-md hover:bg-gray-500" onClick={() => handleExpression(op)}>
+                {op}
+              </Button>
+            ))}
+            {/* Equals and Clear buttons */}
+            <Button className="text-center py-4 text-2xl bg-green-600 text-white rounded-md hover:bg-green-500 col-span-2" onClick={() => handleCalculate()}>
+              =
+            </Button>
+            <Button className="text-center py-4 text-2xl bg-red-600 text-white rounded-md hover:bg-red-500" onClick={() => handleExpression("C")}>
+              C
+            </Button>
           </div>
         </div>
       </div>
