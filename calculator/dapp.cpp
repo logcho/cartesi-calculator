@@ -75,7 +75,7 @@ int precedence(char op) {
     return 0;
 }
 
-int applyOperation(int a, int b, char op) {
+double applyOperation(double a, double b, char op) {
     switch (op) {
         case '+': return a + b;
         case '-': return a - b;
@@ -92,23 +92,23 @@ std::string evaluateExpression(const std::string& expression) {
         return "Error: Invalid mathematical expression";
     }
 
-    std::stack<int> values;
+    std::stack<double> values;
     std::stack<char> ops;
     std::istringstream tokens(expression);
     
-    int num;
+    double num;
     char ch;
     
     try {
         while (tokens >> std::ws) { // Ignore whitespace
-            if (std::isdigit(tokens.peek())) {  
-                tokens >> num;
+            if (std::isdigit(tokens.peek()) || tokens.peek() == '.') {  
+                tokens >> num;  // Parse the number (could be float)
                 values.push(num);
             } else { 
                 tokens >> ch;
                 while (!ops.empty() && precedence(ops.top()) >= precedence(ch)) {
-                    int b = values.top(); values.pop();
-                    int a = values.top(); values.pop();
+                    double b = values.top(); values.pop();
+                    double a = values.top(); values.pop();
                     char op = ops.top(); ops.pop();
                     values.push(applyOperation(a, b, op));
                 }
@@ -117,8 +117,8 @@ std::string evaluateExpression(const std::string& expression) {
         }
 
         while (!ops.empty()) {
-            int b = values.top(); values.pop();
-            int a = values.top(); values.pop();
+            double b = values.top(); values.pop();
+            double a = values.top(); values.pop();
             char op = ops.top(); ops.pop();
             values.push(applyOperation(a, b, op));
         }
@@ -128,6 +128,7 @@ std::string evaluateExpression(const std::string& expression) {
         return std::string("Error: ") + e.what(); // Return error as a string
     }
 }
+
 
 std::string handle_advance(httplib::Client &cli, picojson::value data)
 {

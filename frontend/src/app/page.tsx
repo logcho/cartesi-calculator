@@ -4,19 +4,35 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { useWriteInputBoxAddInput } from "@/hooks/generated";
-import { stringToHex } from "viem";
-import { NOTICES_QUERY } from "@/hooks/gql";
-import { useQuery } from "@apollo/client";
+import { Address, hexToString, stringToHex } from "viem";
+import { useRollupsServer } from "@/hooks/rollups";
 
 export default function Home() {
   const [calculation, setCalculation] = useState("0"); // Start with "0" as the initial value
+  const dappAddress: Address = "0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e"
+  // TODO useRollupsServer
+  const { loading, success, error, write, notices} = useRollupsServer(dappAddress, stringToHex(calculation));
+
+  const [ result ] = notices;
+  console.log(result);
+
+  // Use useEffect to handle setting calculation based on loading, error, and result
+  useEffect(() => {
+    if (loading) {
+      setCalculation("Loading...");
+    } else if (error) {
+      setCalculation("Error");
+    } else if (result) {
+      setCalculation(hexToString(result)); // Convert hex result to string
+    }
+  }, [loading, error, result]); // Depend on loading, error, and result
 
   const handleClick = (value: string) => {
     if (value === "=") {
       try {
         // Evaluate the expression
-        setCalculation(eval(calculation));
+        setCalculation("Loading...");
+        write && write();
       } catch (error) {
         setCalculation("Error");
       }
@@ -73,3 +89,7 @@ export default function Home() {
     </div>
   );
 }
+function useWaitForTransaction(): { data: any; isLoading: any; } {
+  throw new Error("Function not implemented.");
+}
+
